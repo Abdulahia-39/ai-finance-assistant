@@ -1,8 +1,29 @@
-import { Slot } from "expo-router";
-import { View, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { Slot, Redirect } from "expo-router";
+import {
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function AuthLayout() {
+  const { userToken, isLoading } = useContext(AuthContext);
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (userToken) {
+    return <Redirect href="/" />;
+  }
   return (
     // SafeAreaView prevents content from hiding under notches/home bars
     <SafeAreaView className="flex-1 bg-background">
