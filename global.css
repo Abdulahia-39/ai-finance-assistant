@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: #8da9c4;
+    --color-secondary: #13315c;
+    --color-background: #eef4ed;
+    --color-card: #134074;
+  }
+
+  /* Optional: Dark Mode Support */
+  .dark {
+    --color-primary: 96 165 250;
+    --color-background: 15 23 42; /* Slate 900 */
+    --color-card: 30 41 59;
+  }
+}
