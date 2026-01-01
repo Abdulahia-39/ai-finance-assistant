@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,12 @@ import {
 } from "react-native";
 import { Mail, Lock, ArrowRight } from "lucide-react-native";
 import { Link } from "expo-router";
+import { AuthContext } from "../../context/AuthContext";
 
 const LoginScreen = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { login } = useContext(AuthContext);
   return (
     <View className="flex-1 justify-center">
       {/* Header Section */}
@@ -35,6 +39,8 @@ const LoginScreen = () => {
             className="bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-slate-900 shadow-sm"
             keyboardType="email-address"
             autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
           />
         </View>
 
@@ -46,6 +52,8 @@ const LoginScreen = () => {
             placeholder="Password"
             className="bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-slate-900 shadow-sm"
             secureTextEntry
+            value={password}
+            onChangeText={setPassword}
           />
         </View>
       </View>
@@ -54,6 +62,9 @@ const LoginScreen = () => {
       <TouchableOpacity
         className="bg-blue-500 mt-8 rounded-2xl py-4 flex-row justify-center items-center shadow-lg shadow-blue-300"
         activeOpacity={0.8}
+        onPress={() => {
+          login(email, password);
+        }}
       >
         <Text className="text-white text-lg font-semibold mr-2">Sign In</Text>
         <ArrowRight size={20} color="white" />

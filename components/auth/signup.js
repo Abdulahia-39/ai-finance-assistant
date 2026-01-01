@@ -1,9 +1,36 @@
-import React from "react";
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { Link } from "expo-router";
 import { Mail, Lock, User, ArrowRight } from "lucide-react-native";
+import { AuthContext } from "../../context/AuthContext";
+import { useContext, useState } from "react";
+import axios from "axios";
+import { API_URL } from "../../config/api";
 
 const SignupScreen = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const { login } = useContext(AuthContext);
+
+  const handleRegister = async () => {
+    if (password !== confirmPassword) {
+      Alert.alert("Invalid password", "Passwords must match");
+      return;
+    }
+
+    try {
+      await axios.post(`${API_URL}/api/auth/register`, {
+        name: name,
+        email: email,
+        password: password,
+      });
+      login(email, password);
+    } catch (err) {
+      Alert.alert("Error", `Login failed: ${err}`);
+    }
+  };
+
   return (
     <View className="flex-1 justify-center">
       {/* Header */}
@@ -26,6 +53,8 @@ const SignupScreen = () => {
           <TextInput
             placeholder="Full Name"
             className="bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-slate-900 shadow-sm"
+            value={name}
+            onChangeText={setName}
           />
         </View>
 
@@ -39,6 +68,8 @@ const SignupScreen = () => {
             className="bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-slate-900 shadow-sm"
             keyboardType="email-address"
             autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
           />
         </View>
 
@@ -51,6 +82,8 @@ const SignupScreen = () => {
             placeholder="Password"
             className="bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-slate-900 shadow-sm"
             secureTextEntry
+            value={password}
+            onChangeText={setPassword}
           />
         </View>
 
@@ -63,6 +96,8 @@ const SignupScreen = () => {
             placeholder="Confirm Password"
             className="bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-slate-900 shadow-sm"
             secureTextEntry
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
           />
         </View>
       </View>
@@ -71,6 +106,7 @@ const SignupScreen = () => {
       <TouchableOpacity
         className="bg-blue-500 mt-8 rounded-2xl py-4 flex-row justify-center items-center shadow-lg shadow-blue-300"
         activeOpacity={0.8}
+        onPress={handleRegister}
       >
         <Text className="text-white text-lg font-semibold mr-2">
           Create Account
