@@ -27,7 +27,7 @@ const SignupScreen = () => {
       });
       login(email, password);
     } catch (err) {
-      Alert.alert("Error", `Login failed: ${err}`);
+      Alert.alert("Error", "Invalid Credentials");
     }
   };
 
