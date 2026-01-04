@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext } from "react";
 import axios from "axios";
+import { AuthContext } from "./AuthContext";
 
 const AIContext = createContext();
 
@@ -8,6 +9,7 @@ import { API_URL } from "../config/api";
 export const AIProvider = ({ children }) => {
   const [chatHistory, setChatHistory] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const { userToken } = useContext(AuthContext);
 
   const sendMessage = async (userText) => {
     if (!userText.trim() || isTyping) return;
@@ -22,10 +24,19 @@ export const AIProvider = ({ children }) => {
     setIsTyping(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/ai/chat`, {
-        message: userText,
-        history: chatHistory,
-      });
+      const config = {
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+      };
+      const response = await axios.post(
+        `${API_URL}/api/ai/chat`,
+        {
+          message: userText,
+          history: chatHistory,
+        },
+        config
+      );
 
       const data = await response.data;
 
