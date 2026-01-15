@@ -5,15 +5,19 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  FlatList,
 } from "react-native";
 import {
   TrendingUp,
   Coffee,
   ShoppingBag,
-  ArrowUpRight,
   CreditCard,
   Lightbulb,
+  PieChart,
+  DollarSign,
+  BriefcaseBusiness,
 } from "lucide-react-native";
+import { useRouter } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
@@ -27,9 +31,34 @@ const chartData = [
   { day: "fri", height: 80 },
 ];
 
+const ACTIONS = [
+  {
+    id: "1",
+    label: "Pay",
+    icon: <DollarSign size={22} color="#ef4444" />,
+    bgColor: "bg-red-50",
+    url: "/expense",
+  },
+  {
+    id: "2",
+    label: "Receive",
+    icon: <BriefcaseBusiness size={22} color="#10b981" />,
+    bgColor: "bg-emerald-50",
+    url: "/revenue",
+  },
+  {
+    id: "3",
+    label: "Set Budget",
+    icon: <PieChart size={22} color="#3b82f6" />,
+    bgColor: "bg-blue-50",
+    url: "/budget",
+  },
+];
+
 const maxHeight = Math.max(...chartData.map((item) => item.height));
 
 const HomeScreen = () => {
+  const router = useRouter();
   return (
     <ScrollView
       className="flex-1 bg-slate-50"
@@ -72,6 +101,36 @@ const HomeScreen = () => {
               this week than usual.
             </Text>
           </View>
+        </View>
+
+        <View className="mb-8 w-full">
+          <FlatList
+            data={ACTIONS}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: 24,
+              display: "flex",
+              justifyContent: "space-between",
+              width: "100%",
+            }}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                className="items-center mr-6"
+                onPress={() => router.push(item.url)}
+              >
+                <View
+                  className={`${item.bgColor} p-8 rounded-3xl mb-2 shadow-lg shadow-slate-200 border border-white`}
+                >
+                  {item.icon}
+                </View>
+                <Text className="text-slate-600 text-xs font-semibold uppercase tracking-tighter">
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
         </View>
 
         {/* Weekly Summary Chart Placeholder */}
