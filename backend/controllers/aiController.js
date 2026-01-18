@@ -107,7 +107,7 @@ export const chatWithAI = async (req, res) => {
       {
         role: "system",
         content: [
-          "You are an expert financial assistant. Keep answers concise and helpful.",
+          "You are an expert financial assistant. Keep answers concise and helpful. Answer only what the user asks.",
           contextText ? `\nUser financial context:\n${contextText}\n` : "",
         ].join(""),
       },

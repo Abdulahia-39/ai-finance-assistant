@@ -18,6 +18,7 @@ import {
   HelpCircle,
   ExternalLink,
 } from "lucide-react-native";
+import { AuthContext } from "../../context/AuthContext";
 
 const SettingItem = ({
   icon: Icon,
@@ -56,8 +57,10 @@ const SettingItem = ({
 );
 
 const ProfileScreen = () => {
+  const { logout } = React.useContext(AuthContext);
+
   const handleLogout = () => {
-    // In a real app, you would clear your Auth context/tokens here
+    logout();
     alert("Logged out successfully");
   };
 

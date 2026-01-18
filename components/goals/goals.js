@@ -1,24 +1,36 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Switch } from "react-native";
+import React, { useMemo, useState } from "react";
 import {
-  Target,
-  Car,
-  Home,
-  ShieldCheck,
-  Plus,
-  Zap,
-  ArrowRight,
-  Repeat,
-} from "lucide-react-native";
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Switch,
+  ActivityIndicator,
+  Modal,
+  TextInput,
+} from "react-native";
+import { Plus } from "lucide-react-native";
+import { useGoals } from "../../context/GoalsContext";
+import AddAmountModal from "./addAmountModal";
+import AddGoalModal from "./addGoalModal";
 
-const GoalCard = ({ title, saved, target, icon: Icon, color }) => {
-  const progress = Math.min((saved / target) * 100, 100);
+const GoalCard = ({ goal, color }) => {
+  const progress = Math.min(
+    (goal.currentAmount / goal.targetAmount) * 100,
+    100
+  );
+  const initial = goal.title?.[0]?.toUpperCase() || "?";
 
   return (
     <View className="bg-white p-5 rounded-3xl mb-4 shadow-sm border border-slate-100">
       <View className="flex-row justify-between items-start mb-4">
-        <View className={`p-3 rounded-2xl ${color} bg-opacity-10`}>
-          <Icon size={24} color={color.replace("bg-", "")} />
+        <View
+          className="p-3 rounded-2xl"
+          style={{ backgroundColor: `${color}1A` }}
+        >
+          <Text className="font-bold" style={{ color }}>
+            {initial}
+          </Text>
         </View>
         <TouchableOpacity>
           <Plus size={20} color="#94a3b8" />
@@ -26,14 +38,14 @@ const GoalCard = ({ title, saved, target, icon: Icon, color }) => {
       </View>
 
       <Text className="text-slate-500 text-xs font-medium uppercase tracking-wider">
-        {title}
+        {goal.title}
       </Text>
       <View className="flex-row items-baseline mb-2">
         <Text className="text-2xl font-bold text-slate-900">
-          ${saved.toLocaleString()}
+          ${goal.currentAmount.toLocaleString()}
         </Text>
         <Text className="text-slate-400 text-sm ml-1">
-          of ${target.toLocaleString()}
+          of ${goal.targetAmount.toLocaleString()}
         </Text>
       </View>
 
@@ -43,7 +55,7 @@ const GoalCard = ({ title, saved, target, icon: Icon, color }) => {
           className="h-full rounded-full"
           style={{
             width: `${progress}%`,
-            backgroundColor: color.replace("bg-", ""),
+            backgroundColor: color,
           }}
         />
       </View>
@@ -52,7 +64,7 @@ const GoalCard = ({ title, saved, target, icon: Icon, color }) => {
           {Math.round(progress)}% COMPLETE
         </Text>
         <Text className="text-slate-400 text-[10px] font-bold">
-          ${(target - saved).toLocaleString()} LEFT
+          ${(goal.targetAmount - goal.currentAmount).toLocaleString()} LEFT
         </Text>
       </View>
     </View>
@@ -60,15 +72,30 @@ const GoalCard = ({ title, saved, target, icon: Icon, color }) => {
 };
 
 const GoalsScreen = () => {
-  const [roundUps, setRoundUps] = useState(true);
-  const [paydaySave, setPaydaySave] = useState(false);
+  const { goals, loading, addToGoal, createGoal, deleteGoal } = useGoals();
+  const [showAdd, setShowAdd] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState(null);
+  const [amount, setAmount] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const { totalSaved, totalTarget, completion } = useMemo(() => {
+    const saved = goals.reduce((sum, g) => sum + (g.currentAmount || 0), 0);
+    const target = goals.reduce((sum, g) => sum + (g.targetAmount || 0), 0);
+    const pct = target > 0 ? Math.min((saved / target) * 100, 100) : 0;
+    return { totalSaved: saved, totalTarget: target, completion: pct };
+  }, [goals]);
 
   return (
     <ScrollView className="flex-1 bg-slate-50">
       <View className="px-6 pt-14 pb-6">
         <Text className="text-3xl font-bold text-slate-900">Vault</Text>
         <Text className="text-slate-500">
-          You're saving 12% more than last month.
+          Saved ${totalSaved.toLocaleString()} of $
+          {totalTarget.toLocaleString() || "0"}
+          {totalTarget > 0 ? ` • ${Math.round(completion)}% to goals` : ""}
         </Text>
       </View>
 
@@ -81,84 +108,68 @@ const GoalsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <GoalCard
-          title="Emergency Fund"
-          saved={8400}
-          target={10000}
-          icon={ShieldCheck}
-          color="#10b981" // emerald
-        />
-        <GoalCard
-          title="New Tesla"
-          saved={12500}
-          target={45000}
-          icon={Car}
-          color="#3b82f6" // blue
-        />
-        <GoalCard
-          title="Dream Home"
-          saved={45000}
-          target={150000}
-          icon={Home}
-          color="#8b5cf6" // violet
-        />
+        {loading ? (
+          <ActivityIndicator size="small" />
+        ) : goals.length ? (
+          goals.map((goal) => (
+            <TouchableOpacity
+              key={goal._id}
+              activeOpacity={0.9}
+              onPress={() => {
+                setSelectedGoal(goal);
+                setAmount("");
+                setShowAdd(true);
+              }}
+            >
+              <GoalCard goal={goal} color="#10b981" />
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text className="text-slate-500">No goals yet.</Text>
+        )}
       </View>
 
-      {/* Auto-Save Rules Section */}
       <View className="px-6 mt-6 pb-12">
-        <Text className="text-lg font-bold text-slate-800 mb-4">
-          Auto-Save Rules
-        </Text>
-
         <View className="bg-slate-900 rounded-3xl p-6 shadow-xl">
-          {/* Round-ups */}
-          <View className="flex-row items-center justify-between mb-6">
-            <View className="flex-row items-center flex-1">
-              <View className="bg-blue-500/20 p-2 rounded-xl mr-4">
-                <Zap size={20} color="#3b82f6" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-white font-bold">Round-ups</Text>
-                <Text className="text-slate-400 text-xs">
-                  Save the change from every buy
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={roundUps}
-              onValueChange={setRoundUps}
-              trackColor={{ false: "#334155", true: "#3b82f6" }}
-            />
-          </View>
-
-          {/* Payday Save */}
-          <View className="flex-row items-center justify-between">
-            <View className="flex-row items-center flex-1">
-              <View className="bg-emerald-500/20 p-2 rounded-xl mr-4">
-                <Repeat size={20} color="#10b981" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-white font-bold">Payday Boost</Text>
-                <Text className="text-slate-400 text-xs">
-                  Save $100 every time you get paid
-                </Text>
-              </View>
-            </View>
-            <Switch
-              value={paydaySave}
-              onValueChange={setPaydaySave}
-              trackColor={{ false: "#334155", true: "#10b981" }}
-            />
-          </View>
-
-          <View className="mt-6 pt-6 border-t border-slate-800">
-            <TouchableOpacity className="flex-row items-center justify-center bg-white/10 py-3 rounded-2xl">
+          <View className="">
+            <TouchableOpacity
+              className="flex-row items-center justify-center bg-white/10 py-3 rounded-2xl"
+              onPress={() => setShowCreate(true)}
+            >
               <Plus size={18} color="white" />
-              <Text className="text-white font-bold ml-2">Add New Rule</Text>
+              <Text className="text-white font-bold ml-2">Add New Goal</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
+
+      <AddAmountModal
+        showAdd={showAdd}
+        setShowAdd={setShowAdd}
+        selectedGoal={selectedGoal}
+        addToGoal={addToGoal}
+        deleteGoal={deleteGoal}
+        amount={amount}
+        setAmount={setAmount}
+        submitting={submitting}
+        setSubmitting={setSubmitting}
+        deleting={deleting}
+        setDeleting={setDeleting}
+      />
+
+      <AddGoalModal
+        visible={showCreate}
+        onClose={() => setShowCreate(false)}
+        submitting={creating}
+        onSave={async ({ title, targetAmount, category }) => {
+          setCreating(true);
+          const res = await createGoal({ title, targetAmount, category });
+          setCreating(false);
+          if (res?.success) {
+            setShowCreate(false);
+          }
+        }}
+      />
     </ScrollView>
   );
 };

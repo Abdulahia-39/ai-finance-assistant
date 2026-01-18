@@ -35,16 +35,6 @@ export default function Layout() {
       />
 
       <Tabs.Screen
-        name="insights"
-        options={{
-          tabBarLabel: "Insights",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="insights" size={size} color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
         name="ai"
         options={{
           tabBarLabel: "Ai",
