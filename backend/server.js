@@ -4,6 +4,7 @@ import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import aiRouter from "./routes/aiRoutes.js";
 import transactionRoutes from "./routes/transactionRoutes.js";
+import goalRoutes from "./routes/goalRoutes.js";
 import cors from "cors";
 import morgan from "morgan";
 
@@ -20,6 +21,8 @@ app.use("/api/auth", userRoutes);
 app.use("/api/ai", aiRouter);
 
 app.use("/api/transactions", transactionRoutes);
+
+app.use("/api/goals", goalRoutes);
 
 app.listen(3000, () => {
   console.log("Server is running on http://localhost:3000");

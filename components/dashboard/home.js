@@ -8,9 +8,6 @@ import {
   FlatList,
 } from "react-native";
 import {
-  TrendingUp,
-  Coffee,
-  ShoppingBag,
   CreditCard,
   Lightbulb,
   PieChart,
@@ -18,6 +15,8 @@ import {
   BriefcaseBusiness,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { ActivityIndicator } from "react-native";
+import { useTransaction } from "../../context/TransactionContext";
 
 const { width } = Dimensions.get("window");
 
@@ -37,21 +36,22 @@ const ACTIONS = [
     label: "Pay",
     icon: <DollarSign size={22} color="#ef4444" />,
     bgColor: "bg-red-50",
-    url: "/expense",
+    // Use explicit segment path to avoid navigation errors when coming from tabs
+    url: "/(transactions)/expense",
   },
   {
     id: "2",
     label: "Receive",
     icon: <BriefcaseBusiness size={22} color="#10b981" />,
     bgColor: "bg-emerald-50",
-    url: "/revenue",
+    url: "/(transactions)/revenue",
   },
   {
     id: "3",
     label: "Set Budget",
     icon: <PieChart size={22} color="#3b82f6" />,
     bgColor: "bg-blue-50",
-    url: "/budget",
+    url: "/(transactions)/budget",
   },
 ];
 
@@ -59,6 +59,7 @@ const maxHeight = Math.max(...chartData.map((item) => item.height));
 
 const HomeScreen = () => {
   const router = useRouter();
+  const { transactions, loading } = useTransaction();
   return (
     <ScrollView
       className="flex-1 bg-slate-50"
@@ -162,35 +163,25 @@ const HomeScreen = () => {
             <Text className="text-xl font-bold text-slate-900">
               Recent Activity
             </Text>
-            <TouchableOpacity>
-              <Text className="text-blue-600 font-semibold">See All</Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(transactions)/expense")}
+            >
+              <Text className="text-blue-600 font-semibold">Add</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Transaction List */}
           <View className="space-y-3">
-            <TransactionItem
-              icon={<Coffee size={20} color="#64748b" />}
-              title="Starbucks"
-              category="Food & Drink"
-              amount="-$5.50"
-              date="Today"
-            />
-            <TransactionItem
-              icon={<ShoppingBag size={20} color="#64748b" />}
-              title="Amazon"
-              category="Shopping"
-              amount="-$42.00"
-              date="Yesterday"
-            />
-            <TransactionItem
-              icon={<TrendingUp size={20} color="#059669" />}
-              title="Stock Dividend"
-              category="Investment"
-              amount="+$12.40"
-              isPositive
-              date="Oct 2"
-            />
+            {loading ? (
+              <ActivityIndicator size="small" />
+            ) : transactions && transactions.length ? (
+              transactions
+                .slice(0, 6)
+                .map((tx) => (
+                  <TransactionItem key={tx._id || tx.date} tx={tx} />
+                ))
+            ) : (
+              <Text className="text-slate-500">No transactions yet.</Text>
+            )}
           </View>
         </View>
       </View>
@@ -198,32 +189,51 @@ const HomeScreen = () => {
   );
 };
 
-const TransactionItem = ({
-  icon,
-  title,
-  category,
-  amount,
-  date,
-  isPositive,
-}) => (
-  <View className="bg-white p-4 rounded-2xl border border-slate-100 flex-row items-center justify-between">
-    <View className="flex-row items-center flex-1">
-      <View className="bg-slate-50 p-3 rounded-xl mr-4">{icon}</View>
-      <View>
-        <Text className="font-bold text-slate-900">{title}</Text>
-        <Text className="text-slate-500 text-xs">
-          {category} • {date}
-        </Text>
-      </View>
-    </View>
-    <Text
-      className={`font-bold text-lg ${
-        isPositive ? "text-emerald-600" : "text-slate-900"
-      }`}
+const TransactionItem = ({ tx }) => {
+  const isIncome = tx.type === "income";
+  const amountValue = Number(tx.amount || 0);
+  const amountText = `${isIncome ? "+" : "-"}$${amountValue.toFixed(2)}`;
+  const categoryLabel = tx.category || "General";
+  const title = tx.merchant || categoryLabel;
+  const dateLabel = tx.date
+    ? new Date(tx.date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })
+    : "Today";
+
+  const icon = (
+    <View
+      className={`${
+        isIncome ? "bg-emerald-50" : "bg-slate-50"
+      } w-10 h-10 rounded-xl items-center justify-center mr-4`}
     >
-      {amount}
-    </Text>
-  </View>
-);
+      <Text className="font-bold text-slate-700">
+        {categoryLabel[0]?.toUpperCase() || "?"}
+      </Text>
+    </View>
+  );
+
+  return (
+    <View className="bg-white p-4 rounded-2xl border border-slate-100 flex-row items-center justify-between">
+      <View className="flex-row items-center flex-1">
+        {icon}
+        <View>
+          <Text className="font-bold text-slate-900">{title}</Text>
+          <Text className="text-slate-500 text-xs">
+            {categoryLabel} • {dateLabel}
+          </Text>
+        </View>
+      </View>
+      <Text
+        className={`font-bold text-lg ${
+          isIncome ? "text-emerald-600" : "text-slate-900"
+        }`}
+      >
+        {amountText}
+      </Text>
+    </View>
+  );
+};
 
 export default HomeScreen;

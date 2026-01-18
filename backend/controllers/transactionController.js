@@ -1,6 +1,16 @@
 import Transaction from "../models/transactionModel.js";
 
-export const getTransactions = async (req, res) => {};
+export const getTransactions = async (req, res) => {
+  try {
+    const transactions = await Transaction.find({ userId: req.user.id })
+      .sort({ date: -1 })
+      .lean();
+    return res.json(transactions);
+  } catch (err) {
+    console.error("getTransactions error", err);
+    return res.status(500).json({ message: "Failed to fetch transactions" });
+  }
+};
 
 export const saveTransaction = async (req, res) => {
   const { amount, type, category, merchant, note } = req.body;
@@ -20,13 +30,7 @@ export const saveTransaction = async (req, res) => {
   });
 
   if (transaction) {
-    res.status(201).json({
-      amount: transaction.amount,
-      type: transaction.type,
-      category: transaction.category,
-      merchant: transaction.merchant ? transaction.merchant : null,
-      note: transaction.note ? transaction.note : null,
-    });
+    res.status(201).json(transaction);
   } else {
     res.status(401).json({ message: "Invalid transaction" });
   }

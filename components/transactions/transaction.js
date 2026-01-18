@@ -123,8 +123,8 @@ const TransactionForm = ({ type = "expense" }) => {
                 key={item.id}
                 onPress={() => setCategory(item.label)}
                 className={`w-[22%] aspect-square rounded-3xl items-center justify-center mb-4 border-2 ${
-                  category === item.id
-                    ? "border-slate-900 shadow-sm"
+                  category === item.label
+                    ? "border-slate-900"
                     : "border-transparent"
                 } ${item.color}`}
               >
