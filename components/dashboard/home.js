@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import { ActivityIndicator } from "react-native";
 import { useTransaction } from "../../context/TransactionContext";
 import { AuthContext } from "../../context/AuthContext";
+import { useAI } from "../../context/AiContext";
 
 const { width } = Dimensions.get("window");
 
@@ -68,11 +69,16 @@ const HomeScreen = () => {
   const { user } = useContext(AuthContext);
   const { transactions, loading, balance, income, expenses, safeToSpend } =
     useTransaction();
+  const { insight, insightLoading, fetchInsight } = useAI();
 
   const headerCopy = useMemo(() => {
     const name = user?.name?.split(" ")[0];
     return name ? `Hey, ${name}` : "Welcome back";
   }, [user?.name]);
+
+  useEffect(() => {
+    fetchInsight();
+  }, [fetchInsight]);
   return (
     <ScrollView
       className="flex-1 bg-slate-50"
@@ -136,10 +142,27 @@ const HomeScreen = () => {
           </View>
           <View className="flex-1">
             <Text className="text-amber-900 font-bold text-sm">AI Insight</Text>
-            <Text className="text-amber-800 text-sm leading-5">
-              You've spent 20% more on <Text className="font-bold">coffee</Text>{" "}
-              this week than usual.
-            </Text>
+            {insightLoading ? (
+              <View className="flex-row items-center mt-1">
+                <ActivityIndicator size="small" color="#d97706" />
+                <Text className="text-amber-800 text-sm ml-2">
+                  Fetching a fresh insight...
+                </Text>
+              </View>
+            ) : (
+              <Text className="text-amber-800 text-sm leading-5">
+                {insight || "No insight yet. Try refreshing."}
+              </Text>
+            )}
+            <TouchableOpacity
+              className="mt-3 self-start px-3 py-1 rounded-full bg-white border border-amber-200"
+              onPress={fetchInsight}
+              disabled={insightLoading}
+            >
+              <Text className="text-xs font-semibold text-amber-800">
+                {insightLoading ? "Updating..." : "Refresh"}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
