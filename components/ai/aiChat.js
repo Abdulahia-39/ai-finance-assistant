@@ -12,6 +12,18 @@ import {
 import { Send, Sparkles, Bot, Receipt, BarChart3 } from "lucide-react-native";
 import { useAI } from "../../context/AiContext";
 
+// Normalize AI markdown-style responses for clean display
+const formatMessageText = (text) => {
+  if (!text) return "";
+
+  let cleaned = text;
+  cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, "$1"); // strip bold
+  cleaned = cleaned.replace(/\*(.*?)\*/g, "$1"); // strip italics / bullet markers
+  cleaned = cleaned.replace(/^\s*[-*]\s+/gm, "• "); // bullets to dots
+
+  return cleaned.trim();
+};
+
 const AIHubScreen = () => {
   const [message, setMessage] = useState("");
   const { chatHistory, isTyping, sendMessage } = useAI();
@@ -66,13 +78,10 @@ const AIHubScreen = () => {
 
             {/* Quick Actions Pills */}
             <View className="flex-row mb-6">
-              <TouchableOpacity className="bg-white border border-slate-200 px-4 py-2 rounded-full mr-2 flex-row items-center shadow-sm">
-                <Receipt size={14} color="#2563eb" />
-                <Text className="ml-2 text-xs font-semibold text-slate-600">
-                  Scan Receipt
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity className="bg-white border border-slate-200 px-4 py-2 rounded-full flex-row items-center shadow-sm">
+              <TouchableOpacity
+                className="bg-white border border-slate-200 px-4 py-2 rounded-full flex-row items-center shadow-sm"
+                onPress={() => sendMessage("Give me saving tips on budgeting.")}
+              >
                 <BarChart3 size={14} color="#2563eb" />
                 <Text className="ml-2 text-xs font-semibold text-slate-600">
                   Budget Advice
@@ -117,7 +126,7 @@ const AIHubScreen = () => {
                   item.role === "user" ? "text-white" : "text-slate-800"
                 }`}
               >
-                {item.text}
+                {formatMessageText(item.text)}
               </Text>
             </View>
           </View>
