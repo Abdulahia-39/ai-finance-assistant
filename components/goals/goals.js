@@ -17,7 +17,7 @@ import AddGoalModal from "./addGoalModal";
 const GoalCard = ({ goal, color }) => {
   const progress = Math.min(
     (goal.currentAmount / goal.targetAmount) * 100,
-    100
+    100,
   );
   const initial = goal.title?.[0]?.toUpperCase() || "?";
 
@@ -103,9 +103,6 @@ const GoalsScreen = () => {
       <View className="px-6">
         <View className="flex-row justify-between items-end mb-4">
           <Text className="text-lg font-bold text-slate-800">Your Goals</Text>
-          <TouchableOpacity>
-            <Text className="text-blue-600 font-semibold">View All</Text>
-          </TouchableOpacity>
         </View>
 
         {loading ? (
