@@ -8,6 +8,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [userToken, setUserToken] = useState(null);
+  const [user, setUser] = useState(null);
 
   const login = async (email, password) => {
     setIsLoading(true);
@@ -17,10 +18,13 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
       });
-
-      const token = response.data.token;
+      const { token, name, email: respEmail, _id } = response.data;
       setUserToken(token);
       await AsyncStorage.setItem("userToken", token);
+
+      const userPayload = { id: _id, name, email: respEmail };
+      setUser(userPayload);
+      await AsyncStorage.setItem("user", JSON.stringify(userPayload));
     } catch (err) {
       console.log(err);
       alert("Login Error");
@@ -31,7 +35,9 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setIsLoading(true);
     setUserToken(null);
+    setUser(null);
     AsyncStorage.removeItem("userToken");
+    AsyncStorage.removeItem("user");
     setIsLoading(false);
   };
 
@@ -40,6 +46,14 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(true);
       let storedToken = await AsyncStorage.getItem("userToken");
       setUserToken(storedToken);
+      const storedUser = await AsyncStorage.getItem("user");
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {
+          setUser(null);
+        }
+      }
       setIsLoading(false);
     } catch (err) {
       console.log(err);
@@ -51,7 +65,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ login, logout, isLoading, userToken }}>
+    <AuthContext.Provider value={{ login, logout, isLoading, userToken, user }}>
       {children}
     </AuthContext.Provider>
   );
