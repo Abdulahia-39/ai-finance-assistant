@@ -1,4 +1,10 @@
-import React, { createContext, useState, useContext } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useCallback,
+  useRef,
+} from "react";
 import axios from "axios";
 import { AuthContext } from "./AuthContext";
 
@@ -9,7 +15,42 @@ import { API_URL } from "../config/api";
 export const AIProvider = ({ children }) => {
   const [chatHistory, setChatHistory] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [insight, setInsight] = useState(null);
+  const [insightLoading, setInsightLoading] = useState(false);
   const { userToken } = useContext(AuthContext);
+
+  const insightInFlight = useRef(false);
+
+  const fetchInsight = useCallback(async () => {
+    if (!userToken || insightInFlight.current) return;
+    insightInFlight.current = true;
+    setInsightLoading(true);
+    try {
+      const config = { headers: { Authorization: `Bearer ${userToken}` } };
+      const response = await axios.post(
+        `${API_URL}/api/ai/chat`,
+        {
+          message:
+            "Give one concise, actionable spending insight based on my recent transactions. Under 28 words, no greeting.",
+          history: [],
+        },
+        config,
+      );
+
+      const data = await response.data;
+      if (data?.success && data?.text) {
+        setInsight(data.text.trim());
+      } else {
+        setInsight("No insight available right now.");
+      }
+    } catch (error) {
+      console.error("AI insight error", error?.response?.data || error);
+      setInsight("Could not load AI insight.");
+    } finally {
+      insightInFlight.current = false;
+      setInsightLoading(false);
+    }
+  }, [userToken]);
 
   const sendMessage = async (userText) => {
     if (!userText.trim() || isTyping) return;
@@ -35,7 +76,7 @@ export const AIProvider = ({ children }) => {
           message: userText,
           history: chatHistory,
         },
-        config
+        config,
       );
 
       const data = await response.data;
@@ -69,7 +110,15 @@ export const AIProvider = ({ children }) => {
 
   return (
     <AIContext.Provider
-      value={{ chatHistory, isTyping, sendMessage, clearChat }}
+      value={{
+        chatHistory,
+        isTyping,
+        sendMessage,
+        clearChat,
+        insight,
+        insightLoading,
+        fetchInsight,
+      }}
     >
       {children}
     </AIContext.Provider>
