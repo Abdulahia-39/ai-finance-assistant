@@ -22,8 +22,6 @@ import { useAI } from "../../context/AiContext";
 
 const { width } = Dimensions.get("window");
 
-// placeholder removed — weekly data will be computed from transactions inside the component
-
 const ACTIONS = [
   {
     id: "1",
@@ -49,9 +47,6 @@ const ACTIONS = [
   },
 ];
 
-// max bar height in pixels for the chart visualization
-const MAX_BAR_HEIGHT = 90;
-
 const formatCurrency = (value) =>
   `$${Number(value || 0)
     .toFixed(2)
@@ -64,6 +59,53 @@ const HomeScreen = () => {
     useTransaction();
   const { insight, insightLoading, fetchInsight } = useAI();
 
+  const weeklyExpenses = useMemo(() => {
+    const today = new Date();
+    const startOfToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+
+    // Oldest first (6 days ago -> today) for left-to-right rendering
+    const days = Array.from({ length: 7 }, (_, idx) => {
+      const day = new Date(startOfToday);
+      day.setDate(startOfToday.getDate() - (6 - idx));
+      return day;
+    });
+
+    return days.map((day) => {
+      const start = new Date(day);
+      const end = new Date(day);
+      end.setDate(end.getDate() + 1);
+
+      const total = (transactions || []).reduce((sum, tx) => {
+        if (tx.type !== "expense" || !tx.date) return sum;
+        const txDate = new Date(tx.date);
+        return txDate >= start && txDate < end
+          ? sum + Number(tx.amount || 0)
+          : sum;
+      }, 0);
+
+      return {
+        day: day
+          .toLocaleDateString("en-US", { weekday: "short" })
+          .toLowerCase(),
+        total,
+      };
+    });
+  }, [transactions]);
+
+  const maxWeeklyTotal = useMemo(
+    () => Math.max(...weeklyExpenses.map((item) => item.total), 1),
+    [weeklyExpenses],
+  );
+
+  const hasWeeklyData = useMemo(
+    () => weeklyExpenses.some((item) => item.total > 0),
+    [weeklyExpenses],
+  );
+
   const headerCopy = useMemo(() => {
     const name = user?.name?.split(" ")[0];
     return name ? `Hey, ${name}` : "Welcome back";
@@ -72,49 +114,6 @@ const HomeScreen = () => {
   useEffect(() => {
     fetchInsight();
   }, [fetchInsight]);
-
-  // derive weekly spending data (last 7 days) from transactions
-  const weeklyData = useMemo(() => {
-    // create array for last 7 days (oldest -> newest)
-    const days = [];
-    const today = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(today.getDate() - i);
-      const label = d
-        .toLocaleDateString("en-US", { weekday: "short" })
-        .toLowerCase()
-        .slice(0, 3);
-      days.push({ date: new Date(d.getFullYear(), d.getMonth(), d.getDate()), label, total: 0 });
-    }
-
-    if (!transactions || !transactions.length) {
-      return days.map((d) => ({ day: d.label, height: 8, total: 0 }));
-    }
-
-    // sum expenses per exact day
-    transactions.forEach((tx) => {
-      if (!tx || !tx.date) return;
-      const txDate = new Date(tx.date);
-      // normalize to yyyy-mm-dd for comparison
-      const txKey = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate()).getTime();
-      const dayObj = days.find((dd) => dd.date.getTime() === txKey);
-      const amount = Number(tx.amount || 0);
-      if (dayObj) {
-        // consider only expenses for spending chart
-        if (tx.type === "expense") dayObj.total += amount;
-      }
-    });
-
-    const maxTotal = Math.max(...days.map((d) => d.total), 0);
-
-    return days.map((d) => {
-      const height = maxTotal > 0 ? Math.max(6, Math.round((d.total / maxTotal) * MAX_BAR_HEIGHT)) : 8;
-      return { day: d.label, height, total: d.total };
-    });
-  }, [transactions]);
-
-  const maxHeight = Math.max(...weeklyData.map((item) => item.height));
   return (
     <ScrollView
       className="flex-1 bg-slate-50"
@@ -237,21 +236,41 @@ const HomeScreen = () => {
           <Text className="text-xl font-bold text-slate-900 mb-4">
             Weekly Spending
           </Text>
-          <View className="bg-white rounded-3xl p-6 border border-slate-100 flex-row items-end justify-between h-42">
-            {/* Simple Bar Chart Representation */}
-            {weeklyData.map((data, i) => (
-              <View key={data.day + i} className="items-center">
-                <View
-                  className={`w-3 rounded-full ${
-                    data.height === maxHeight ? "bg-blue-600" : "bg-slate-200"
-                  }`}
-                  style={{ height: data.height }}
-                />
-                <Text className="text-[10px] text-slate-400 mt-2">
-                  {data.day}
-                </Text>
-              </View>
-            ))}
+          <View
+            className="bg-white rounded-3xl p-6 border border-slate-100 flex-row items-end justify-between"
+            style={{ minHeight: 180 }}
+          >
+            {hasWeeklyData ? (
+              weeklyExpenses.map((data) => {
+                const barHeight = Math.max(
+                  6,
+                  (data.total / maxWeeklyTotal) * 130,
+                );
+
+                return (
+                  <View key={data.day} className="items-center flex-1">
+                    <View
+                      className={`w-3 rounded-full ${
+                        data.total === maxWeeklyTotal
+                          ? "bg-blue-600"
+                          : "bg-slate-200"
+                      }`}
+                      style={{ height: barHeight }}
+                    />
+                    <Text className="text-[10px] text-slate-400 mt-2">
+                      {data.day}
+                    </Text>
+                    <Text className="text-[10px] text-slate-500 font-semibold mt-1">
+                      {data.total > 0 ? formatCurrency(data.total) : "$0"}
+                    </Text>
+                  </View>
+                );
+              })
+            ) : (
+              <Text className="text-slate-500 text-sm">
+                No spending logged in the last 7 days.
+              </Text>
+            )}
           </View>
         </View>
 
