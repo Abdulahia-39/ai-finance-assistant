@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext, useMemo } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import {
 import { useRouter } from "expo-router";
 import { ActivityIndicator } from "react-native";
 import { useTransaction } from "../../context/TransactionContext";
+import { AuthContext } from "../../context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
@@ -57,9 +58,21 @@ const ACTIONS = [
 
 const maxHeight = Math.max(...chartData.map((item) => item.height));
 
+const formatCurrency = (value) =>
+  `$${Number(value || 0)
+    .toFixed(2)
+    .replace(/\d(?=(\d{3})+\.)/g, "$&,")}`;
+
 const HomeScreen = () => {
   const router = useRouter();
-  const { transactions, loading } = useTransaction();
+  const { user } = useContext(AuthContext);
+  const { transactions, loading, balance, income, expenses, safeToSpend } =
+    useTransaction();
+
+  const headerCopy = useMemo(() => {
+    const name = user?.name?.split(" ")[0];
+    return name ? `Hey, ${name}` : "Welcome back";
+  }, [user?.name]);
   return (
     <ScrollView
       className="flex-1 bg-slate-50"
@@ -67,9 +80,15 @@ const HomeScreen = () => {
     >
       {/* Header Section */}
       <View className="px-6 pt-12 pb-6 bg-white border-b border-slate-100">
-        <Text className="text-slate-500 font-medium">Total Balance</Text>
-        <Text className="text-4xl font-bold text-slate-900 mt-1">
-          $12,450.80
+        <Text className="text-slate-500 font-medium">{headerCopy}</Text>
+        <View className="flex-row items-baseline justify-between mt-1">
+          <Text className="text-4xl font-bold text-slate-900">
+            {formatCurrency(balance)}
+          </Text>
+          {loading && <ActivityIndicator size="small" />}
+        </View>
+        <Text className="text-slate-500 mt-1 text-sm">
+          Total balance · {transactions?.length || 0} entries
         </Text>
       </View>
 
@@ -84,10 +103,30 @@ const HomeScreen = () => {
               <CreditCard size={20} color="white" />
             </View>
           </View>
-          <Text className="text-white text-3xl font-bold">$2,104.00</Text>
-          <Text className="text-blue-100 mt-2 text-sm opacity-80">
-            Until next payday (Oct 15)
+          <Text className="text-white text-3xl font-bold">
+            {formatCurrency(safeToSpend)}
           </Text>
+          <Text className="text-blue-100 mt-2 text-sm opacity-80">
+            Buffer applied: 30% of remaining balance
+          </Text>
+          <View className="flex-row mt-4">
+            <View className="flex-1">
+              <Text className="text-blue-200 text-xs uppercase tracking-tight">
+                Income
+              </Text>
+              <Text className="text-white font-semibold">
+                {formatCurrency(income)}
+              </Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-blue-200 text-xs uppercase tracking-tight">
+                Expenses
+              </Text>
+              <Text className="text-white font-semibold">
+                {formatCurrency(expenses)}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* AI Nudge / Insight Card */}
