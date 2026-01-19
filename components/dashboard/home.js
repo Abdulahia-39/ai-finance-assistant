@@ -22,15 +22,7 @@ import { useAI } from "../../context/AiContext";
 
 const { width } = Dimensions.get("window");
 
-const chartData = [
-  { day: "sat", height: 40 },
-  { day: "sun", height: 70 },
-  { day: "mon", height: 45 },
-  { day: "tue", height: 90 },
-  { day: "wed", height: 65 },
-  { day: "thu", height: 30 },
-  { day: "fri", height: 80 },
-];
+// placeholder removed — weekly data will be computed from transactions inside the component
 
 const ACTIONS = [
   {
@@ -57,7 +49,8 @@ const ACTIONS = [
   },
 ];
 
-const maxHeight = Math.max(...chartData.map((item) => item.height));
+// max bar height in pixels for the chart visualization
+const MAX_BAR_HEIGHT = 90;
 
 const formatCurrency = (value) =>
   `$${Number(value || 0)
@@ -79,6 +72,49 @@ const HomeScreen = () => {
   useEffect(() => {
     fetchInsight();
   }, [fetchInsight]);
+
+  // derive weekly spending data (last 7 days) from transactions
+  const weeklyData = useMemo(() => {
+    // create array for last 7 days (oldest -> newest)
+    const days = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      const label = d
+        .toLocaleDateString("en-US", { weekday: "short" })
+        .toLowerCase()
+        .slice(0, 3);
+      days.push({ date: new Date(d.getFullYear(), d.getMonth(), d.getDate()), label, total: 0 });
+    }
+
+    if (!transactions || !transactions.length) {
+      return days.map((d) => ({ day: d.label, height: 8, total: 0 }));
+    }
+
+    // sum expenses per exact day
+    transactions.forEach((tx) => {
+      if (!tx || !tx.date) return;
+      const txDate = new Date(tx.date);
+      // normalize to yyyy-mm-dd for comparison
+      const txKey = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate()).getTime();
+      const dayObj = days.find((dd) => dd.date.getTime() === txKey);
+      const amount = Number(tx.amount || 0);
+      if (dayObj) {
+        // consider only expenses for spending chart
+        if (tx.type === "expense") dayObj.total += amount;
+      }
+    });
+
+    const maxTotal = Math.max(...days.map((d) => d.total), 0);
+
+    return days.map((d) => {
+      const height = maxTotal > 0 ? Math.max(6, Math.round((d.total / maxTotal) * MAX_BAR_HEIGHT)) : 8;
+      return { day: d.label, height, total: d.total };
+    });
+  }, [transactions]);
+
+  const maxHeight = Math.max(...weeklyData.map((item) => item.height));
   return (
     <ScrollView
       className="flex-1 bg-slate-50"
@@ -203,8 +239,8 @@ const HomeScreen = () => {
           </Text>
           <View className="bg-white rounded-3xl p-6 border border-slate-100 flex-row items-end justify-between h-42">
             {/* Simple Bar Chart Representation */}
-            {chartData.map((data, i) => (
-              <View key={data.day} className="items-center">
+            {weeklyData.map((data, i) => (
+              <View key={data.day + i} className="items-center">
                 <View
                   className={`w-3 rounded-full ${
                     data.height === maxHeight ? "bg-blue-600" : "bg-slate-200"
