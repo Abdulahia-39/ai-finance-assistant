@@ -117,6 +117,7 @@ const AIHubScreen = () => {
                 <Bot size={16} color="#475569" />
               </View>
             )}
+
             <View
               className={`max-w-[80%] p-4 rounded-3xl ${
                 item.role === "user"
