@@ -29,6 +29,7 @@ const AIHubScreen = () => {
   const { chatHistory, isTyping, sendMessage } = useAI();
   const flatListRef = useRef(null);
   
+  
 
   const handleSend = () => {
     if (message.trim().length === 0) return;
