@@ -89,6 +89,7 @@ const AIHubScreen = () => {
                   Budget Advice
                 </Text>
               </TouchableOpacity>
+                  
             </View>
           </View>
         )}
